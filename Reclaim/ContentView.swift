@@ -8,17 +8,21 @@
 import SwiftUI
 
 struct ContentView: View {
-    var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
-        }
-        .padding()
-    }
-}
+    @State private var tapped = false
 
-#Preview {
-    ContentView()
+    var body: some View {
+        VStack(spacing: 16) {
+            Text("Reclaim")
+                .font(.largeTitle.bold())
+
+            Text(tapped ? "Le bouton marche" : "Test sur iPhone")
+                .foregroundStyle(.secondary)
+
+            Button("Appuyer ici") {
+                tapped.toggle()
+            }
+            .buttonStyle(.borderedProminent)
+        }
+        .padding(24)
+    }
 }
