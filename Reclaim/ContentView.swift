@@ -1,66 +1,59 @@
 import SwiftUI
 
 struct ContentView: View {
+    @Environment(\.scenePhase) private var scenePhase
+    @StateObject private var viewModel = ReclaimViewModel()
+    @State private var selectedTab = 0
+
     var body: some View {
-        NavigationStack {
-            ZStack {
-                LinearGradient(
-                    colors: [
-                        Color.black,
-                        Color(red: 0.08, green: 0.10, blue: 0.16)
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .ignoresSafeArea()
+        ZStack {
+            ReclaimBackground()
 
-                VStack(spacing: 28) {
-                    VStack(spacing: 8) {
-                        Text("Reclaim")
-                            .font(.system(size: 42, weight: .bold, design: .rounded))
-                            .foregroundStyle(.white)
-
-                        Text("Reprends ton temps. Une session à la fois.")
-                            .font(.headline)
-                            .foregroundStyle(.white.opacity(0.7))
-                            .multilineTextAlignment(.center)
-                    }
-
-                    VStack(spacing: 16) {
-                        Button {
-                            // TODO: Start focus session
-                        } label: {
-                            Text("Start Focus")
-                                .font(.headline)
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(.white)
-                                .foregroundStyle(.black)
-                                .clipShape(RoundedRectangle(cornerRadius: 18))
-                        }
-
-                        Button {
-                            // TODO: Configure apps
-                        } label: {
-                            Text("Choisir les apps à bloquer")
-                                .font(.headline)
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(.white.opacity(0.12))
-                                .foregroundStyle(.white)
-                                .clipShape(RoundedRectangle(cornerRadius: 18))
+            TabView(selection: $selectedTab) {
+                NavigationStack {
+                    HomeView {
+                        if !viewModel.isSessionActive {
+                            withAnimation {
+                                _ = viewModel.startFocusWithSelectedDuration()
+                            }
                         }
                     }
-                    .padding(.horizontal, 24)
-
-                    Spacer()
                 }
-                .padding(.top, 80)
+                .tabItem { Label("Accueil", systemImage: "house.fill") }
+                .tag(0)
+
+                BlockingView()
+                    .tabItem { Label("Blocages", systemImage: "lock.shield.fill") }
+                    .tag(1)
+
+                StatsView()
+                    .tabItem { Label("Progrès", systemImage: "circle.grid.2x2.fill") }
+                    .tag(2)
+
+                NavigationStack {
+                    SettingsView()
+                }
+                .tabItem { Label("Paramètres", systemImage: "gearshape.fill") }
+                .tag(3)
             }
+            .environmentObject(viewModel)
+            .tint(ReclaimColors.primary)
+        }
+        .fullScreenCover(isPresented: onboardingBinding) {
+            BaselineOnboardingView()
+                .environmentObject(viewModel)
+        }
+        .onChange(of: scenePhase) { _, phase in
+            guard phase == .active else { return }
+            guard viewModel.baselineSettings.isOnboardingComplete else { return }
+            guard viewModel.sessionLimitSettings.isEnabled else { return }
+            viewModel.configureSessionLimitMonitoring()
         }
     }
-}
 
-#Preview {
-    ContentView()
+    private var onboardingBinding: Binding<Bool> {
+        Binding {
+            !viewModel.baselineSettings.isOnboardingComplete
+        } set: { _ in }
+    }
 }
